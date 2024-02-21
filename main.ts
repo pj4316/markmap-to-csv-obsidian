@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, renderResults } from 'obsidian';
+import { App, Editor, MarkdownPreviewView, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, renderResults } from 'obsidian';
 // Remember to rename these classes and interfaces!
 
 interface MarkmapToCsvSettings {
@@ -38,24 +38,9 @@ export default class MarkmapToCsvPlugin extends Plugin {
 				const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 				if (activeView) {
 					const markdownData = activeView.editor.getValue();
-					const markMaps = this.getMarkmaps(markdownData)
-					if(markMaps != null) {
-						const markmaps = this.getMarkmaps(markdownData)
-					
-						const markMapCsvs = markmaps?.map((markmap) => {
-							return this.convertMarkmapToCSV(markmap);
-						})
-						
-						if(markMapCsvs) {
-							const csvData = markMapCsvs.filter((markMapCsv) => { return markMapCsv.trim() !== "" }).join('\n')
-							this.saveCsvToFile(this.app.workspace.getActiveFile()?.basename ?? "markMap", csvData);
-						}
-
-						return true;
-					} else {
-						new Notice('ERROR: Please open a Markmap file to convert.');
-						return false;
-					}
+					const csvData = this.convertMarkmapToCSV(markdownData);
+					this.saveCsvToFile(this.app.workspace.getActiveFile()?.basename ?? "markMap", csvData);
+					return true;
 				} else {
 					new Notice('ERROR: Please open a Markmap file to convert.');
 					return false;
@@ -147,14 +132,6 @@ export default class MarkmapToCsvPlugin extends Plugin {
 		const fullPath = `${directory}/markmap-${filename}-${this.getCurrentDateTimeString()}.csv`
         this.app.vault.create(fullPath, csvData)
     }
-
-	getMarkmaps(markdownData: string): string[] | null {
-		const pattern = /```markmap\n([\s\S]*?)```/g
-		const match = markdownData.match(pattern)
-		if(match) {
-			return match
-		} else return null
-	}
 
 	getCurrentDateTimeString() {
 		const now = new Date();
