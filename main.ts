@@ -1,16 +1,10 @@
 import { App, Editor, MarkdownPreviewView, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, renderResults } from 'obsidian';
 // Remember to rename these classes and interfaces!
 
-interface MarkmapToCsvSettings {
-	directory: string
-}
 
 export default class MarkmapToCsvPlugin extends Plugin {
-	settings: MarkmapToCsvSettings;
 
 	async onload() {
-		await this.loadSettings();
-
 		// This creates an icon in the left ribbon.
 		const markMapToCsvIconE1 = this.addRibbonIcon('dice', 'Markmap to csv Plugin', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
@@ -34,16 +28,14 @@ export default class MarkmapToCsvPlugin extends Plugin {
 					key: 'M'
 				}
 			],
-			checkCallback: (checking) => {
+			callback: async () => {
 				const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 				if (activeView) {
 					const markdownData = activeView.editor.getValue();
 					const csvData = this.convertMarkmapToCSV(markdownData);
-					this.saveCsvToFile(this.app.workspace.getActiveFile()?.basename ?? "markMap", csvData);
-					return true;
+					await this.saveCsvToFile(this.app.workspace.getActiveFile()?.basename ?? "markMap", csvData);
 				} else {
 					new Notice('ERROR: Please open a Markmap file to convert.');
-					return false;
 				}
 			}
 		});
@@ -56,22 +48,10 @@ export default class MarkmapToCsvPlugin extends Plugin {
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
-		this.addSettingTab(new MarkMapToCsvSettingTab(this.app, this));
 	}
 
 	onunload() {
 
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, await this.loadData(), {
-			directory: '.'
-		} as MarkmapToCsvSettings);
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
 	}
 
 	convertMarkmapToCSV(data: string): string {
@@ -91,25 +71,40 @@ export default class MarkmapToCsvPlugin extends Plugin {
 					// start new mindmap
 					stack = []
 				}
-				if (stack.length-1 >= headerLevel) {
+				if (stack.length > headerLevel) {
 					const newData = stack.join(',')
 					csvRows.push(newData)
-					stack = stack.slice(0, headerLevel)
+					stack = stack.slice(0, headerLevel-1)
+				} else if (stack.length === headerLevel) {
+					const newData = stack.join(',')
+					csvRows.push(newData)
+					stack.pop()
 				}
-				stack.push(line.substring(headerLevel).trim()); // Add header to stack
+
+				const item = line.substring(headerLevel+1)
+				stack.push(item); // Add header to stack
 				currentDepth = headerLevel; // Update current depth
+				console.log(`depth=${currentDepth}, item=${item}, stack=[${stack}]`)
 			} else if (line.trimStart().startsWith('-')) {
 				// List item indicates a new data row
 				const indent: number = this.getIndentCount(line.split('-')[0]); // Calculate indent level
 				const depth: number = indent + 3; // Calculate depth
 				const item: string = line.substring(line.indexOf('-') + 1).trim(); // Extract item
-				if (stack.length-1 >= depth) {
+
+				if (stack.length > depth) {
 					const newData = stack.join(',')
 					csvRows.push(newData)
-					stack = stack.slice(0, depth)
+					stack = stack.slice(0, depth-1)
+				} else if(stack.length === depth) {
+					const newData = stack.join(',')
+					csvRows.push(newData)
+					stack.pop()
 				}
+
 				stack.push(item); // Set item in stack
 				currentDepth = depth; // Update current depth
+
+				console.log(`depth=${depth}, item=${item}, stack=[${stack}]`)
 			}
 		}
 
@@ -127,10 +122,9 @@ export default class MarkmapToCsvPlugin extends Plugin {
 		return match ? match[0].length / 4 : 0;
 	}
 
-    saveCsvToFile(filename: string, csvData: string): void {
-		const directory = this.settings.directory ?? this.app.workspace.getActiveFile()?.path ?? '.'
-		const fullPath = `${directory}/markmap-${filename}-${this.getCurrentDateTimeString()}.csv`
-        this.app.vault.create(fullPath, csvData)
+    async saveCsvToFile(filename: string, csvData: string): Promise<void> {
+		const fullPath = `markmap-${filename}.csv`
+        await this.app.vault.adapter.write(fullPath, csvData)
     }
 
 	getCurrentDateTimeString() {
@@ -143,26 +137,4 @@ export default class MarkmapToCsvPlugin extends Plugin {
 		const seconds = String(now.getSeconds()).padStart(2, '0');
 		return `${year}${month}${day}${hours}${minutes}${seconds}`;
 	}
-}
-
-class MarkMapToCsvSettingTab extends PluginSettingTab {
-    constructor(app: App, private plugin: MarkmapToCsvPlugin) {
-        super(app, plugin);
-    }
-
-    display(): void {
-        const { containerEl } = this;
-        const setting = new Setting(containerEl)
-            .setName('directory')
-            .setDesc('Configure save csv directory. (default= activateFile\'s path)')
-            .addText(text => {
-                text
-                    .setPlaceholder('input your directory')
-                    .setValue(this.plugin.settings.directory)
-                    .onChange(async (value) => {
-                        this.plugin.settings.directory = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-    }
 }
