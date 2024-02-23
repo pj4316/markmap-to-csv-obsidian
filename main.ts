@@ -125,6 +125,7 @@ export default class MarkmapToCsvPlugin extends Plugin {
     async saveCsvToFile(filename: string, csvData: string): Promise<void> {
 		const fullPath = `markmap-${filename}.csv`
         await this.app.vault.adapter.write(fullPath, csvData)
+		new Notice(`save ${fullPath}`);
     }
 
 	getCurrentDateTimeString() {
