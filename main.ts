@@ -22,12 +22,6 @@ export default class MarkmapToCsvPlugin extends Plugin {
 		this.addCommand({
 			id: 'convert-markmap-to-csv',
 			name: 'Convert Markmap to CSV',
-			hotkeys: [
-				{
-					modifiers: ['Ctrl', 'Shift', 'Alt'],
-					key: 'M'
-				}
-			],
 			callback: async () => {
 				const file = this.app.workspace.getActiveFile()
 				if (!file) {

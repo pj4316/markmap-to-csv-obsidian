@@ -61,7 +61,7 @@ chocolate 1
 
 2. convert markmap to csv
 - input `convert markmap to csv` using command palette
-- use shortcut (default shortcut: `shift` + `ctrl` + `alt` + `M`)
+- use shortcut
 
 
 # Other
