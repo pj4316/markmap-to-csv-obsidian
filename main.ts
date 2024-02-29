@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownPreviewView, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, renderResults } from 'obsidian';
+import { App, Editor, FileView, MarkdownPreviewView, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, View, renderResults } from 'obsidian';
 // Remember to rename these classes and interfaces!
 
 
@@ -29,14 +29,20 @@ export default class MarkmapToCsvPlugin extends Plugin {
 				}
 			],
 			callback: async () => {
-				const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (activeView) {
-					const markdownData = activeView.editor.getValue();
-					const csvData = this.convertMarkmapToCSV(markdownData);
-					await this.saveCsvToFile(this.app.workspace.getActiveFile()?.basename ?? "markMap", csvData);
-				} else {
+				const file = this.app.workspace.getActiveFile()
+				if (!file) {
 					new Notice('ERROR: Please open a Markmap file to convert.');
+					return;
 				}
+
+				if (file.extension !== "md") {
+					new Notice('ERROR: Please open markdown file to convert.');
+					return;
+				}
+				
+				const markdownData = await this.app.vault.read(file);
+				const csvData = this.convertMarkmapToCSV(markdownData);
+				await this.saveCsvToFile(file, csvData);
 			}
 		});
 		
@@ -55,7 +61,6 @@ export default class MarkmapToCsvPlugin extends Plugin {
 	}
 
 	convertMarkmapToCSV(data: string): string {
-		console.log(data)
 		const markmapData = data.replace(/^---[\s\S]*?---\n/, '');
 		const lines: string[] = markmapData.trim().split('\n');
 		const csvRows: string[] = [];
@@ -84,7 +89,6 @@ export default class MarkmapToCsvPlugin extends Plugin {
 				const item = line.substring(headerLevel+1)
 				stack.push(item); // Add header to stack
 				currentDepth = headerLevel; // Update current depth
-				console.log(`depth=${currentDepth}, item=${item}, stack=[${stack}]`)
 			} else if (line.trimStart().startsWith('-')) {
 				// List item indicates a new data row
 				const indent: number = this.getIndentCount(line.split('-')[0]); // Calculate indent level
@@ -103,8 +107,6 @@ export default class MarkmapToCsvPlugin extends Plugin {
 
 				stack.push(item); // Set item in stack
 				currentDepth = depth; // Update current depth
-
-				console.log(`depth=${depth}, item=${item}, stack=[${stack}]`)
 			}
 		}
 
@@ -122,8 +124,8 @@ export default class MarkmapToCsvPlugin extends Plugin {
 		return match ? match[0].length / 4 : 0;
 	}
 
-    async saveCsvToFile(filename: string, csvData: string): Promise<void> {
-		const fullPath = `markmap-${filename}.csv`
+    async saveCsvToFile(file: TFile, csvData: string): Promise<void> {
+		const fullPath = `${file.parent?.path}/markmap-${file.basename}.csv`
         await this.app.vault.adapter.write(fullPath, csvData)
 		new Notice(`save ${fullPath}`);
     }
