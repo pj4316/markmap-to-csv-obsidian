@@ -1,7 +1,7 @@
 {
 	"id": "markmap-to-csv",
 	"name": "Markmap to CSV",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"author": "maxlee",
 	"minimumAppVersion": "0.12.0",
 	"description": "Converts Markmap data to CSV format.",
