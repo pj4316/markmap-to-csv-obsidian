@@ -6,7 +6,7 @@
 	"minimumAppVersion": "0.12.0",
 	"description": "Converts Markmap data to CSV format.",
 	"authorUrl": "https://github.com/pj4316",
-	"fundingUrl": "",
+	"fundingUrl": "https://github.com/sponsors/pj4316",
 	"dependencies": [],
 	"isDesktopOnly": false
 }
