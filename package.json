@@ -1,6 +1,6 @@
 {
 	"name": "markmap-to-csv",
-	"version": "1.0.1",
+	"version": "1.0.0",
 	"description": "This is a markmap to csv for markdown",
 	"main": "main.js",
 	"scripts": {
