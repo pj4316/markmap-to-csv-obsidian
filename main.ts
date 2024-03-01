@@ -1,53 +1,35 @@
-import { App, Editor, FileView, MarkdownPreviewView, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, View, renderResults } from 'obsidian';
-// Remember to rename these classes and interfaces!
-
+import { Notice, Plugin, TFile } from 'obsidian';
 
 export default class MarkmapToCsvPlugin extends Plugin {
 
 	async onload() {
-		// This creates an icon in the left ribbon.
-		const markMapToCsvIconE1 = this.addRibbonIcon('dice', 'Markmap to csv Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		markMapToCsvIconE1.addClass('markmap2csv-plugin-ribbon-class');
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
-
 		console.log('loading MarkmapToCSVPlugin');
 
 		this.addCommand({
 			id: 'convert-markmap-to-csv',
 			name: 'Convert Markmap to CSV',
-			callback: async () => {
+			checkCallback: (checking) => {
 				const file = this.app.workspace.getActiveFile()
-				if (!file) {
-					new Notice('ERROR: Please open a Markmap file to convert.');
-					return;
+				if (!file || file.extension !== "md") {
+					return false;
 				}
 
-				if (file.extension !== "md") {
-					new Notice('ERROR: Please open markdown file to convert.');
-					return;
+				if(!checking) {
+					this.app.vault.read(file).then(
+						async (markdownData) => {
+							const csvData = this.convertMarkmapToCSV(markdownData);
+							await this.saveCsvToFile(file, csvData);
+						}
+					).catch((err) => {
+						new Notice(`ERROR: failed to read file ${file.basename}`)
+						throw err
+					});
 				}
 				
-				const markdownData = await this.app.vault.read(file);
-				const csvData = this.convertMarkmapToCSV(markdownData);
-				await this.saveCsvToFile(file, csvData);
+				return true;
+				
 			}
 		});
-		
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
 	onunload() {
