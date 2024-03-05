@@ -6,7 +6,7 @@ let's trying!
 it can be read until heading 2.
 under heading 2, you can use list!
 
-[How to use this plugin](https://youtu.be/X7l4XTSrD0U)
+video: [How to use this plugin](https://youtu.be/X7l4XTSrD0U)
 
 
 ## Example
